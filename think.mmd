@@ -1,0 +1,136 @@
+flowchart TB
+  %% =========================
+  %% 0) 规范与治理约束
+  %% =========================
+  subgraph S["规范与约束层（决定做什么）"]
+    S1["doc/GOAL.md\n愿景与目标"]
+    S2["doc/PRODUCT.md\n产品对象模型"]
+    S3["doc/SPEC-implementation.md\nV1实现合同（最高优先）"]
+    S4["AGENTS.md\n工程规则与DoD"]
+  end
+
+  %% =========================
+  %% 1) 实现骨架（Monorepo）
+  %% =========================
+  subgraph M["实现骨架层（决定怎么组织代码）"]
+    M1["packages/shared\n类型/常量/校验/API合同"]
+    M2["packages/db\nDrizzle schema/client/migrations"]
+    M3["packages/adapters/*\nAgent运行适配器"]
+    M4["server\nREST API + 编排 + WS"]
+    M5["ui\nReact Board控制台"]
+    M6["cli\nonboard/doctor/run + client commands"]
+    M7["scripts/tests/docker/docs\n验证、交付、发布、文档站"]
+  end
+
+  S --> M
+
+  %% =========================
+  %% 2) 运行时核心拓扑
+  %% =========================
+  subgraph R["运行时拓扑（系统如何跑起来）"]
+    R1["server/src/index.ts\n加载配置 + DB准备 + 启动服务"]
+    R2["server/src/app.ts\n中间件/鉴权/路由/UI托管"]
+    R3["server/src/routes/*\nHTTP入口层"]
+    R4["server/src/services/*\n领域服务层"]
+    R5["realtime/live-events\nWebSocket事件推送"]
+
+    U1["ui/src/main.tsx\nProvider装配"]
+    U2["ui/src/App.tsx\n路由 + CloudAccessGate"]
+
+    C1["cli/src/index.ts\n命令树入口"]
+  end
+
+  M4 --> R1 --> R2 --> R3 --> R4
+  M5 --> U1 --> U2
+  M6 --> C1
+
+  %% 合同与模型注入运行时
+  M1 --> R3
+  M1 --> R4
+  M1 --> U2
+  M1 --> C1
+  M2 --> R4
+  M3 --> R4
+
+  %% =========================
+  %% 3) 基础设施
+  %% =========================
+  subgraph I["基础设施层"]
+    I1["PostgreSQL / embedded-postgres"]
+    I2["Storage: local_disk / S3"]
+    I3["External Agent Runtime\n(OpenClaw/Claude/Codex/...)"]
+    I4["Auth Session + Agent API Key"]
+  end
+
+  R4 --> I1
+  R4 --> I2
+  R4 --> I3
+  R2 --> I4
+
+  %% =========================
+  %% 4) 主业务闭环（Board + Agent）
+  %% =========================
+  subgraph B["主业务闭环"]
+    B1["Board在UI操作\n公司/代理/任务/审批/成本"]
+    B2["UI调用 /api/*"]
+    B3["Routes鉴权与入参校验"]
+    B4["Services执行业务规则\n(公司隔离/审批/预算/审计)"]
+    B5["DB写入\ncompanies/agents/issues/approvals/cost_events/..."]
+    B6["发布Live Event"]
+    B7["UI实时刷新"]
+
+    B8["Heartbeat触发（scheduler/manual）"]
+    B9["Adapter唤醒Agent（process/http）"]
+    B10["Agent回传评论/状态/成本"]
+  end
+
+  B1 --> B2 --> B3 --> B4 --> B5
+  B4 --> B6 --> B7
+  B4 --> B8 --> B9 --> B10 --> B3
+
+  R3 --> B3
+  R4 --> B4
+  R5 --> B6
+  U2 --> B1
+  C1 --> B2
+
+  %% =========================
+  %% 5) 首次初始化与认证门控（你遇到的提示）
+  %% =========================
+  subgraph A0["首次初始化/认证门控"]
+    A1["App.tsx CloudAccessGate\nGET /api/health"]
+    A2{"deploymentMode == authenticated?"}
+    A3{"bootstrapStatus == bootstrap_pending?"}
+    A4["显示 Instance setup required"]
+    A5["执行 pnpm paperclipai auth bootstrap-ceo"]
+    A6["生成 invite URL -> /invite/:token"]
+    A7["创建首个 instance admin"]
+    A8{"有 session ?"}
+    A9["跳转 /auth 登录"]
+    A10["进入 /:companyPrefix/dashboard"]
+  end
+
+  U2 --> A1 --> A2
+  A2 -- "否(local_trusted)" --> A10
+  A2 -- "是" --> A3
+  A3 -- "是" --> A4 --> A5 --> A6 --> A7 --> A8
+  A3 -- "否" --> A8
+  A8 -- "否" --> A9
+  A8 -- "是" --> A10
+
+  %% =========================
+  %% 6) 开发交付流水线
+  %% =========================
+  subgraph D["开发到交付流水线"]
+    D1["改规范/需求"]
+    D2["改 db schema"]
+    D3["改 shared 合同"]
+    D4["改 server routes/services"]
+    D5["改 ui/cli"]
+    D6["pnpm -r typecheck"]
+    D7["pnpm test:run (+ e2e)"]
+    D8["pnpm build"]
+    D9["release scripts / Docker / docs"]
+  end
+
+  D1 --> D2 --> D3 --> D4 --> D5 --> D6 --> D7 --> D8 --> D9

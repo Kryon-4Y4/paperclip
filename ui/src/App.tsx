@@ -32,6 +32,31 @@ import { queryKeys } from "./lib/queryKeys";
 import { useCompany } from "./context/CompanyContext";
 import { useDialog } from "./context/DialogContext";
 
+function DocsRedirectPage() {
+  useEffect(() => {
+    window.location.assign("https://paperclip.ing/docs");
+  }, []);
+
+  return (
+    <div className="mx-auto max-w-xl py-10">
+      <div className="rounded-lg border border-border bg-card p-6">
+        <h1 className="text-xl font-semibold">Opening documentation</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          If redirect does not start automatically, open the docs manually.
+        </p>
+        <div className="mt-4">
+          <a
+            href="https://paperclip.ing/docs"
+            className="text-sm font-medium underline underline-offset-2"
+          >
+            Open documentation
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function BootstrapPendingPage({ hasActiveInvite = false }: { hasActiveInvite?: boolean }) {
   return (
     <div className="mx-auto max-w-xl py-10">
@@ -217,6 +242,7 @@ export function App() {
     <>
       <Routes>
         <Route path="auth" element={<AuthPage />} />
+        <Route path="docs" element={<DocsRedirectPage />} />
         <Route path="board-claim/:token" element={<BoardClaimPage />} />
         <Route path="invite/:token" element={<InviteLandingPage />} />
 

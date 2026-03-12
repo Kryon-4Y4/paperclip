@@ -279,3 +279,178 @@ MIT &copy; 2026 Paperclip
 <p align="center">
   <sub>Open source under MIT. Built for people who want to run companies, not babysit agents.</sub>
 </p>
+
+## ——————————————————————————————————————————————
+
+## 
+访问地址
+API服务器: http://127.0.0.1:3100/api
+Web界面: http://127.0.0.1:3100
+健康检查: http://127.0.0.1:3100/api/health
+系统信息
+
+部署模式: embedded-postgres | vite-dev-middleware
+部署环境: local_trusted (private)
+身份验证: 已就绪
+服务器端口: 3100
+数据库: 嵌入式PostgreSQL (端口54329)
+迁移状态: 已应用所有迁移
+心跳检测: 启用 (30000ms)
+数据库备份: 启用 (每60分钟, 保留30天)
+验证测试
+运行健康检查确认服务正常：
+
+
+curl http://127.0.0.1:3100/api/health
+响应：{"status":"ok","deploymentMode":"local_trusted",...} ✅
+
+管理命令
+停止服务
+
+# 停止后台任务
+claude-task-stop b3uispyzd
+重新启动
+
+# 停止后重新启动
+pnpm dev
+其他常用命令
+pnpm dev:server - 仅启动API服务器
+pnpm dev:ui - 仅启动UI界面
+pnpm build - 构建生产版本
+pnpm typecheck - 类型检查
+pnpm test:run - 运行测试
+后续步骤
+打开浏览器访问 http://127.0.0.1:3100
+按照界面提示进行初始设置
+参考 AGENTS.md 配置AI代理
+查看 CONTRIBUTING.md 了解开发指南
+注意：服务使用嵌入式数据库，数据存储在 D:\home\paperclip\.paperclip\instances\default\db。生产部署建议使用独立PostgreSQL实例。
+
+项目已成功部署并运行！
+
+安装项目依赖的任务已完成。从之前的输出可以看到，pnpm已成功安装999个包，包含6个devDependencies。虽然有少量peer依赖警告和网络连接重试，但依赖安装过程顺利完成。
+
+现在所有部署步骤已完成：
+
+✅ Node.js环境检查通过
+✅ pnpm安装完成
+✅ 项目依赖安装完成
+✅ 环境配置完成
+✅ 数据库迁移完成
+✅ 服务已启动并运行中
+Paperclip服务正在端口3100运行，可通过 http://127.0.0.1:3100 访问。
+
+
+
+doc/GOAL.md
+doc/PRODUCT.md
+doc/SPEC-implementation.md
+doc/DEVELOPING.md
+doc/DATABASE.md
+doc/SPEC.md 为长期产品规划。
+doc/SPEC-implementation.md 为V1 版本具体实现契约。
+
+server/：Express REST API 与编排服务
+ui/：React + Vite 控制面板界面
+packages/db/：Drizzle 数据表结构、迁移脚本、数据库客户端
+packages/shared/：共享类型、常量、校验器、API 路径常量
+doc/：运营与产品相关文档
+
+
+## ——————————————————————————————————————————————
+
+AGENTS.md（简体中文翻译）
+面向本仓库中人类与 AI 贡献者的开发指南。
+1. 项目目的
+Paperclip 是面向 AI Agent 企业的控制平面。
+当前实现目标为 V1 版本，具体定义在 doc/SPEC-implementation.md。
+2. 必读前置文档
+在进行任何修改前，请按以下顺序阅读：
+doc/GOAL.md
+doc/PRODUCT.md
+doc/SPEC-implementation.md
+doc/DEVELOPING.md
+doc/DATABASE.md
+doc/SPEC.md 为长期产品规划。
+doc/SPEC-implementation.md 为V1 版本具体实现契约。
+3. 仓库目录结构
+server/：Express REST API 与编排服务
+ui/：React + Vite 控制面板界面
+packages/db/：Drizzle 数据表结构、迁移脚本、数据库客户端
+packages/shared/：共享类型、常量、校验器、API 路径常量
+doc/：运营与产品相关文档
+4. 开发环境搭建（自动数据库）
+开发环境不设置 DATABASE_URL，即可使用嵌入式 PGlite。
+sh
+pnpm install
+pnpm dev
+启动后：
+API：http://localhost:3100
+UI：http://localhost:3100（开发中间件模式下由 API 服务托管）
+快速检查：
+sh
+curl http://localhost:3100/api/health
+curl http://localhost:3100/api/companies
+重置本地开发数据库：
+sh
+rm -rf data/pglite
+pnpm dev
+5. 核心工程规范
+所有变更必须按企业隔离
+所有领域实体都必须归属到某个企业，并在路由 / 服务中强制校验企业边界。
+保持契约同步
+若修改数据表结构或 API 行为，必须同步更新所有受影响的层：
+packages/db 表结构与导出
+packages/shared 类型 / 常量 / 校验器
+server 路由与服务
+ui API 客户端与页面
+保证控制平面不变性
+任务模型：单一负责人
+任务领取：原子语义
+受控操作：审批关卡
+预算：硬上限自动暂停
+变更操作：必须记录行为日志
+非必要不整体替换战略文档
+优先采用增量更新，保持 doc/SPEC.md 与 doc/SPEC-implementation.md 一致。
+6. 数据库变更流程
+修改数据模型时：
+编辑 packages/db/src/schema/*.ts
+确保新表从 packages/db/src/schema/index.ts 导出
+生成迁移文件：
+sh
+pnpm db:generate
+校验编译：
+sh
+pnpm -r typecheck
+注意：
+packages/db/drizzle.config.ts 从 dist/schema/*.js 读取编译后的表结构
+pnpm db:generate 会先编译 packages/db
+7. 交付前验证
+声明完成前，必须执行完整检查：
+sh
+pnpm -r typecheck
+pnpm test:run
+pnpm build
+若有任何步骤无法执行，需明确说明未执行内容及原因。
+8. API 与权限要求
+基础路径：/api
+控制面板访问：视为拥有完整权限的操作员上下文
+Agent 访问：使用 Bearer API 密钥（agent_api_keys），存储时哈希加密
+Agent 密钥禁止访问其他企业数据
+新增接口时：
+必须做企业权限校验
+必须区分操作者权限（控制面板 / Agent）
+变更操作必须写入行为日志
+返回统一规范的 HTTP 错误码：400/401/403/404/409/422/500
+9. UI 开发要求
+路由与导航必须与 API 能力保持一致
+企业隔离页面使用企业选择上下文
+明确展示错误，不静默忽略 API 异常
+10. 完成标准
+一个变更视为完成，需同时满足：
+行为与 doc/SPEC-implementation.md 一致
+类型检查、测试、构建全部通过
+数据库 / 共享层 / 服务端 / 前端契约完全同步
+行为或命令变更时，文档同步更新
+
+##

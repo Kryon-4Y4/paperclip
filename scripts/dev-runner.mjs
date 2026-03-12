@@ -32,6 +32,11 @@ const env = {
   PAPERCLIP_UI_DEV_MIDDLEWARE: "true",
 };
 
+const configuredPort = (env.PORT ?? "").trim();
+if (!configuredPort) {
+  env.PORT = "3110";
+}
+
 if (tailscaleAuth) {
   env.PAPERCLIP_DEPLOYMENT_MODE = "authenticated";
   env.PAPERCLIP_DEPLOYMENT_EXPOSURE = "private";
@@ -39,7 +44,16 @@ if (tailscaleAuth) {
   env.HOST = "0.0.0.0";
   console.log("[paperclip] dev mode: authenticated/private (tailscale-friendly) on 0.0.0.0");
 } else {
-  console.log("[paperclip] dev mode: local_trusted (default)");
+  if (!env.PAPERCLIP_DEPLOYMENT_MODE) {
+    env.PAPERCLIP_DEPLOYMENT_MODE = "authenticated";
+  }
+  if (!env.PAPERCLIP_DEPLOYMENT_EXPOSURE) {
+    env.PAPERCLIP_DEPLOYMENT_EXPOSURE = "private";
+  }
+  if (!env.PAPERCLIP_AUTH_BASE_URL_MODE) {
+    env.PAPERCLIP_AUTH_BASE_URL_MODE = "auto";
+  }
+  console.log(`[paperclip] dev mode: ${env.PAPERCLIP_DEPLOYMENT_MODE}/${env.PAPERCLIP_DEPLOYMENT_EXPOSURE} (default), port ${env.PORT}`);
 }
 
 const pnpmBin = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
